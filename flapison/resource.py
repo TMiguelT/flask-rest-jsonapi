@@ -132,13 +132,16 @@ class Resource(MethodView):
         if len(request.accept_mimetypes) < 1:
             # If the request doesn't specify a mimetype, assume JSON API
             accept_type = 'application/vnd.api+json'
-        elif request.accept_mimetypes.best not in self.response_renderers:
-            # Check if we support the response type
-            raise InvalidAcceptType(
-                'This endpoint only provides the following content types: {}'.format(', '.join(
-                    self.response_renderers.keys())
-                )
-            )
+        elif all([mimetype not in self.response_renderers for mimetype in request.accept_mimetypes.values()]):
+            # Ensure we *really* don't support the mimetype
+            if "*/*" not in request.accept_mimetypes.values():
+                raise InvalidAcceptType(
+                        'This endpoint only provides the following content types: {}'.format(', '.join(
+                            self.response_renderers.keys())
+                        )
+                    )
+            # */* is the general "I don't care" mimetype so lets treat it as JSON API
+            accept_type = 'application/vnd.api+json'
         else:
             accept_type = request.accept_mimetypes.best
         renderer = self.response_renderers[accept_type]
