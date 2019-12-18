@@ -8,8 +8,10 @@ from flask import request, url_for
 from flask.views import MethodView, MethodViewType
 from marshmallow import ValidationError
 from marshmallow_jsonapi.exceptions import IncorrectTypeError
+from marshmallow_jsonapi.fields import BaseRelationship
 from six import with_metaclass
 
+from flapison.content import parse_json, render_json
 from flapison.data_layers.alchemy import SqlalchemyDataLayer
 from flapison.data_layers.base import BaseDataLayer
 from flapison.decorators import (
@@ -18,20 +20,16 @@ from flapison.decorators import (
     jsonapi_exception_formatter,
 )
 from flapison.exceptions import (
-    InvalidType,
     BadRequest,
-    RelationNotFound,
-    InvalidContentType,
     InvalidAcceptType,
+    InvalidContentType,
+    InvalidType,
+    RelationNotFound,
 )
 from flapison.pagination import add_pagination_links
 from flapison.querystring import QueryStringManager as QSManager
-from flapison.schema import compute_schema, get_relationships, get_model_field
-from flapison.content import render_json, parse_json
-from flapison.data_layers.base import BaseDataLayer
-from flapison.data_layers.alchemy import SqlalchemyDataLayer
+from flapison.schema import compute_schema, get_model_field, get_relationships
 from flapison.utils import JSONEncoder
-from marshmallow_jsonapi.fields import BaseRelationship
 
 
 class ResourceMeta(MethodViewType):
@@ -221,8 +219,12 @@ class ResourceList(with_metaclass(ResourceMeta, Resource)):
     @check_method_requirements
     def post(self, *args, **kwargs):
         """Create an object"""
-        qs = QSManager(request.args, self.schema)
+
         json_data = self.parse_request()
+
+        self.before_post(args, kwargs, json_data=json_data)
+
+        qs = QSManager(request.args, self.schema)
 
         schema_kwargs = self._access_kwargs("post_schema_kwargs", args, kwargs)
         schema = compute_schema(self.schema, schema_kwargs, qs, qs.include)
@@ -241,8 +243,6 @@ class ResourceList(with_metaclass(ResourceMeta, Resource)):
                 message["status"] = "422"
                 message["title"] = "Validation error"
             return errors, 422
-
-        self.before_post(args, kwargs, data=data)
 
         obj = self.create_object(data, kwargs)
 
@@ -326,8 +326,11 @@ class ResourceDetail(with_metaclass(ResourceMeta, Resource)):
     @check_method_requirements
     def patch(self, *args, **kwargs):
         """Update an object"""
-        qs = QSManager(request.args, self.schema)
         json_data = self.parse_request()
+
+        self.before_patch(args, kwargs, json_data=json_data)
+
+        qs = QSManager(request.args, self.schema)
         schema_kwargs = self._access_kwargs("patch_schema_kwargs", args, kwargs)
         schema_kwargs.update({"partial": True})
 
@@ -362,8 +365,6 @@ class ResourceDetail(with_metaclass(ResourceMeta, Resource)):
                 source={"pointer": "/data/id"},
             )
 
-        self.before_patch(args, kwargs, data=data)
-
         obj = self.update_object(data, qs, kwargs)
 
         result = schema.dump(obj)
@@ -393,7 +394,7 @@ class ResourceDetail(with_metaclass(ResourceMeta, Resource)):
         """Hook to make custom work after get method"""
         return result
 
-    def before_patch(self, args, kwargs, data=None):
+    def before_patch(self, args, kwargs, json_data=None):
         """Hook to make custom work before patch method"""
         pass
 
@@ -471,6 +472,8 @@ class ResourceRelationship(with_metaclass(ResourceMeta, Resource)):
         """Add / create relationship(s)"""
         json_data = self.parse_request()
 
+        self.before_post(args, kwargs, json_data=json_data)
+
         (
             relationship_field,
             model_relationship_field,
@@ -512,8 +515,6 @@ class ResourceRelationship(with_metaclass(ResourceMeta, Resource)):
                         "The type provided does not match the resource type",
                         source={"pointer": "/data/type"},
                     )
-
-        self.before_post(args, kwargs, json_data=json_data)
 
         obj_, updated = self._data_layer.create_relationship(
             json_data, model_relationship_field, related_id_field, kwargs
@@ -535,6 +536,8 @@ class ResourceRelationship(with_metaclass(ResourceMeta, Resource)):
         """Update a relationship"""
         json_data = self.parse_request()
 
+        self.before_patch(args, kwargs, json_data=json_data)
+
         (
             relationship_field,
             model_relationship_field,
@@ -576,8 +579,6 @@ class ResourceRelationship(with_metaclass(ResourceMeta, Resource)):
                         "The type provided does not match the resource type",
                         source={"pointer": "/data/type"},
                     )
-
-        self.before_patch(args, kwargs, json_data=json_data)
 
         obj_, updated = self._data_layer.update_relationship(
             json_data, model_relationship_field, related_id_field, kwargs
@@ -598,6 +599,9 @@ class ResourceRelationship(with_metaclass(ResourceMeta, Resource)):
     def delete(self, *args, **kwargs):
         """Delete relationship(s)"""
         json_data = self.parse_request()
+
+        self.before_delete(args, kwargs, json_data=json_data)
+
         (
             relationship_field,
             model_relationship_field,
@@ -639,8 +643,6 @@ class ResourceRelationship(with_metaclass(ResourceMeta, Resource)):
                         "The type provided does not match the resource type",
                         source={"pointer": "/data/type"},
                     )
-
-        self.before_delete(args, kwargs, json_data=json_data)
 
         obj_, updated = self._data_layer.delete_relationship(
             json_data, model_relationship_field, related_id_field, kwargs
