@@ -91,6 +91,9 @@ def compute_schema(schema_cls, default_kwargs, qs, include):
             )
             relation_field.__dict__["_Relationship__schema"] = related_schema
 
+    # In Marshmallow 3.x, `only` attribute can not change after create instance.
+    # So we call `_init_fields` afterward, to force schema re-init fields.
+    schema._init_fields()
     return schema
 
 
