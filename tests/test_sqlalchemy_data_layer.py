@@ -362,6 +362,93 @@ def test_get_list_func_kwargs(
     assert "name" not in ret.json["data"]["attributes"]
 
 
+def test_get_schema_kwargs_containing_only_related_object_attributes(
+    app, api, client, session, person, person_detail,
+    computer, computer_model, computer_schema, computer_list
+):
+    """
+    Test a resource that defines its get_schema_kwargs
+    containing `only` parameter with related object attributes
+    """
+    session_ = session
+    person.computers = [computer]
+    session_.commit()
+
+    class ComputerDetail(ResourceDetail):
+        schema = computer_schema
+        data_layer = {
+            "model": computer_model,
+            "session": session,
+        }
+
+        get_schema_kwargs = dict(
+            only=("owner.name",),
+        )
+
+    api.route(person_detail, "person_detail", "/persons/<int:person_id>")
+    api.route(ComputerDetail, "computer_detail", "/computers/<int:id>")
+    api.route(
+        computer_list,
+        "computer_list",
+        "/computers",
+        "/persons/<int:person_id>/computers",
+    )
+    api.init_app(app)
+
+    with client:
+        response = client.get(
+            "/computers/{}?include=owner".format(computer.id), content_type="application/vnd.api+json"
+        )
+        print(response.json)
+        assert response.status_code == 200, response.json["errors"]
+        assert "name" in response.json["included"][0]["attributes"]
+        assert "birth_date" not in response.json["included"][0]["attributes"]
+
+
+def test_get_schema_kwargs_containing_exclude_related_object_attributes(
+    app, api, client, session, person, person_detail,
+    computer, computer_model, computer_schema, computer_list
+):
+    """
+    Test a resource that defines its get_schema_kwargs containing
+    `exclude` parameter with related object attributes
+    """
+    session_ = session
+    person.computers = [computer]
+    session_.commit()
+
+    class ComputerDetail(ResourceDetail):
+        schema = computer_schema
+        data_layer = {
+            "model": computer_model,
+            "session": session,
+        }
+
+        get_schema_kwargs = dict(
+            exclude=("owner.name",),
+            include_data=("owner",)
+        )
+
+    api.route(person_detail, "person_detail", "/persons/<int:person_id>")
+    api.route(ComputerDetail, "computer_detail", "/computers/<int:id>")
+    api.route(
+        computer_list,
+        "computer_list",
+        "/computers",
+        "/persons/<int:person_id>/computers",
+    )
+    api.init_app(app)
+
+    with client:
+        response = client.get(
+            "/computers/{}".format(computer.id), content_type="application/vnd.api+json"
+        )
+        print(response.json)
+        assert response.status_code == 200, response.json["errors"]
+        assert "name" not in response.json["included"][0]["attributes"]
+        assert "birth_date" in response.json["included"][0]["attributes"]
+
+
 def test_head_list(client, registered_routes):
     with client:
         response = client.head("/persons", content_type="application/vnd.api+json")
