@@ -502,6 +502,21 @@ def test_get_detail(client, registered_routes, person):
         assert response.status_code == 200, response.json["errors"]
 
 
+def test_get_detail_with_sparse_fieldsets(client, registered_routes, person):
+    with client:
+        querystring = urlencode(
+            {
+                "fields[person]": "name",
+            }
+        )
+        response = client.get(
+            "/persons/" + str(person.person_id) + "?" + querystring, content_type="application/vnd.api+json"
+        )
+        assert response.status_code == 200, response.json["errors"]
+        assert "name" in response.json["data"]["attributes"]
+        assert len(response.json["data"]["attributes"]) == 1
+
+
 def test_patch_detail(client, registered_routes, computer, person):
     payload = {
         "data": {
