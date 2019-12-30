@@ -47,25 +47,45 @@ def compute_schema(schema_cls, default_kwargs, qs, include):
             if "." in include_path:
                 related_includes[field] += [".".join(include_path.split(".")[1:])]
 
-    # make sure id field is in only parameter unless marshamllow will raise an Exception
-    if schema_kwargs.get("only") is not None and "id" not in schema_kwargs["only"]:
-        schema_kwargs["only"] += ("id",)
+    # manage only parameter of the schema
+    only = schema_kwargs.get("only")
 
-    # create base schema instance
-    schema = schema_cls(**schema_kwargs)
+    # collect sub-related_only
+    related_only = {}
+    if only is not None:
+        for only_path in only:
+            if "." not in only_path:
+                continue
+            field = only_path.split(".")[0]
+            if field not in related_only:
+                related_only[field] = []
+            related_only[field] += [".".join(only_path.split(".")[1:])]
 
     # manage sparse fieldsets
-    if schema.opts.type_ in qs.fields:
-        tmp_only = set(schema.declared_fields.keys()) & set(
-            qs.fields[schema.opts.type_]
-        )
-        if schema.only:
-            tmp_only &= set(schema.only)
-        schema.only = tuple(tmp_only)
+    if schema_cls.Meta.type_ in qs.fields:
+        tmp_only = set(schema_cls._declared_fields.keys()) & set(qs.fields[schema_cls.Meta.type_])
+        if only is not None:
+            tmp_only &= set(only)
+        only = tuple(tmp_only)
 
-        # make sure again that id field is in only parameter unless marshamllow will raise an Exception
-        if schema.only is not None and "id" not in schema.only:
-            schema.only += ("id",)
+    if only is not None and "id" not in only:
+        # make sure id field is in only parameter unless marshamllow will raise an Exception
+        only += ("id",)
+
+    # collect sub-related_exclude
+    related_exclude = {}
+    if schema_kwargs.get("exclude") is not None:
+        for exclude_path in schema_kwargs["exclude"]:
+            if "." not in exclude_path:
+                continue
+            field = exclude_path.split(".")[0]
+            if field not in related_exclude:
+                related_exclude[field] = []
+            related_exclude[field] += [".".join(exclude_path.split(".")[1:])]
+
+    # create base schema instance
+    schema_kwargs["only"] = only
+    schema = schema_cls(**schema_kwargs)
 
     # manage compound documents
     if include:
@@ -78,11 +98,34 @@ def compute_schema(schema_cls, default_kwargs, qs, include):
             related_schema_kwargs = {}
             if "context" in default_kwargs:
                 related_schema_kwargs["context"] = default_kwargs["context"]
+
             if isinstance(related_schema_cls, SchemaABC):
+                related_schema_kwargs["only"] = related_schema_cls.only
+                related_schema_kwargs["exclude"] = related_schema_cls.exclude
                 related_schema_kwargs["many"] = related_schema_cls.many
                 related_schema_cls = related_schema_cls.__class__
+
             if isinstance(related_schema_cls, str):
                 related_schema_cls = class_registry.get_class(related_schema_cls)
+
+            if hasattr(relation_field, "only"):
+                related_schema_kwargs["only"] = relation_field.only
+
+            if hasattr(relation_field, "exclude"):
+                related_schema_kwargs["exclude"] = relation_field.exclude
+
+            if related_only.get(field) is not None:
+                tmp_only = set(related_only[field])
+                if related_schema_kwargs.get("only") is not None:
+                    tmp_only &= set(related_schema_kwargs["only"])
+                related_schema_kwargs["only"] = tuple(tmp_only)
+
+            if related_exclude.get(field) is not None:
+                tmp_exclude = set(related_exclude[field])
+                if related_schema_kwargs.get("exclude") is not None:
+                    tmp_exclude |= set(related_schema_kwargs["exclude"])
+                related_schema_kwargs["exclude"] = tuple(tmp_exclude)
+
             related_schema = compute_schema(
                 related_schema_cls,
                 related_schema_kwargs,
