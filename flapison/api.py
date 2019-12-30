@@ -60,7 +60,7 @@ class Api(object):
                 resource["resource"],
                 resource["view"],
                 *resource["urls"],
-                url_rule_options=resource["url_rule_options"]
+                url_rule_options=resource["url_rule_options"],
             )
 
         if self.blueprint is not None:

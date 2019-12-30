@@ -363,8 +363,16 @@ def test_get_list_func_kwargs(
 
 
 def test_get_schema_kwargs_containing_only_related_object_attributes(
-    app, api, client, session, person, person_detail,
-    computer, computer_model, computer_schema, computer_list
+    app,
+    api,
+    client,
+    session,
+    person,
+    person_detail,
+    computer,
+    computer_model,
+    computer_schema,
+    computer_list,
 ):
     """
     Test a resource that defines its get_schema_kwargs
@@ -381,9 +389,7 @@ def test_get_schema_kwargs_containing_only_related_object_attributes(
             "session": session,
         }
 
-        get_schema_kwargs = dict(
-            only=("owner.name",),
-        )
+        get_schema_kwargs = dict(only=("owner.name",),)
 
     api.route(person_detail, "person_detail", "/persons/<int:person_id>")
     api.route(ComputerDetail, "computer_detail", "/computers/<int:id>")
@@ -397,7 +403,8 @@ def test_get_schema_kwargs_containing_only_related_object_attributes(
 
     with client:
         response = client.get(
-            "/computers/{}?include=owner".format(computer.id), content_type="application/vnd.api+json"
+            "/computers/{}?include=owner".format(computer.id),
+            content_type="application/vnd.api+json",
         )
         print(response.json)
         assert response.status_code == 200, response.json["errors"]
@@ -406,8 +413,16 @@ def test_get_schema_kwargs_containing_only_related_object_attributes(
 
 
 def test_get_schema_kwargs_containing_exclude_related_object_attributes(
-    app, api, client, session, person, person_detail,
-    computer, computer_model, computer_schema, computer_list
+    app,
+    api,
+    client,
+    session,
+    person,
+    person_detail,
+    computer,
+    computer_model,
+    computer_schema,
+    computer_list,
 ):
     """
     Test a resource that defines its get_schema_kwargs containing
@@ -424,10 +439,7 @@ def test_get_schema_kwargs_containing_exclude_related_object_attributes(
             "session": session,
         }
 
-        get_schema_kwargs = dict(
-            exclude=("owner.name",),
-            include_data=("owner",)
-        )
+        get_schema_kwargs = dict(exclude=("owner.name",), include_data=("owner",))
 
     api.route(person_detail, "person_detail", "/persons/<int:person_id>")
     api.route(ComputerDetail, "computer_detail", "/computers/<int:id>")
@@ -591,13 +603,10 @@ def test_get_detail(client, registered_routes, person):
 
 def test_get_detail_with_sparse_fieldsets(client, registered_routes, person):
     with client:
-        querystring = urlencode(
-            {
-                "fields[person]": "name",
-            }
-        )
+        querystring = urlencode({"fields[person]": "name",})
         response = client.get(
-            "/persons/" + str(person.person_id) + "?" + querystring, content_type="application/vnd.api+json"
+            "/persons/" + str(person.person_id) + "?" + querystring,
+            content_type="application/vnd.api+json",
         )
         assert response.status_code == 200, response.json["errors"]
         assert "name" in response.json["data"]["attributes"]

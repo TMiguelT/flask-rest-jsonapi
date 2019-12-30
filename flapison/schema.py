@@ -63,7 +63,9 @@ def compute_schema(schema_cls, default_kwargs, qs, include):
 
     # manage sparse fieldsets
     if schema_cls.Meta.type_ in qs.fields:
-        tmp_only = set(schema_cls._declared_fields.keys()) & set(qs.fields[schema_cls.Meta.type_])
+        tmp_only = set(schema_cls._declared_fields.keys()) & set(
+            qs.fields[schema_cls.Meta.type_]
+        )
         if only is not None:
             tmp_only &= set(only)
         only = tuple(tmp_only)
