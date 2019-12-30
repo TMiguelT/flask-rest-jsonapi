@@ -172,7 +172,7 @@ def test_get_list(client, registered_routes, person, person_2):
             {
                 "page[number]": 1,
                 "page[size]": 1,
-                "fields[person]": "name,birth_date",
+                "fields[person]": "name,birth_date,computers",
                 "sort": "-name",
                 "include": "computers.owner",
                 "filter": json.dumps(
