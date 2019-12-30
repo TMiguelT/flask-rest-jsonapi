@@ -21,7 +21,7 @@ def compute_schema(schema_cls, default_kwargs, qs, include):
     """
     # manage include_data parameter of the schema
     schema_kwargs = default_kwargs
-    schema_kwargs["include_data"] = tuple()
+    schema_kwargs["include_data"] = schema_kwargs.get("include_data", tuple())
 
     # collect sub-related_includes
     related_includes = {}
