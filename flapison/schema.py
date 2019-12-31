@@ -47,25 +47,21 @@ def compute_schema(schema_cls, default_kwargs, qs, include):
             if "." in include_path:
                 related_includes[field] += [".".join(include_path.split(".")[1:])]
 
+    # manage sparse fieldsets
+    if schema_cls.Meta.type_ in qs.fields:
+        tmp_only = set(schema_cls._declared_fields.keys()) & set(
+            qs.fields[schema_cls.Meta.type_]
+        )
+        if schema_kwargs.get("only") is not None:
+            tmp_only &= set(schema_kwargs["only"])
+        schema_kwargs["only"] = tuple(tmp_only)
+
     # make sure id field is in only parameter unless marshamllow will raise an Exception
     if schema_kwargs.get("only") is not None and "id" not in schema_kwargs["only"]:
         schema_kwargs["only"] += ("id",)
 
     # create base schema instance
     schema = schema_cls(**schema_kwargs)
-
-    # manage sparse fieldsets
-    if schema.opts.type_ in qs.fields:
-        tmp_only = set(schema.declared_fields.keys()) & set(
-            qs.fields[schema.opts.type_]
-        )
-        if schema.only:
-            tmp_only &= set(schema.only)
-        schema.only = tuple(tmp_only)
-
-        # make sure again that id field is in only parameter unless marshamllow will raise an Exception
-        if schema.only is not None and "id" not in schema.only:
-            schema.only += ("id",)
 
     # manage compound documents
     if include:
