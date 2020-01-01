@@ -13,7 +13,7 @@ from flapison.exceptions import (
     InvalidField,
     InvalidInclude,
 )
-from flapison.schema import get_model_field, get_relationships, get_schema_from_type
+from flapison.schema import get_model_field, get_relationships
 
 
 class QueryStringManager(object):
@@ -177,11 +177,10 @@ class QueryStringManager(object):
                 result[key] = [value]
 
         for key, value in result.items():
-            schema = get_schema_from_type(key)
             for obj in value:
-                if obj not in schema._declared_fields:
+                if obj not in self.schema._declared_fields:
                     raise InvalidField(
-                        "{} has no attribute {}".format(schema.__name__, obj)
+                        "{} has no attribute {}".format(self.schema.__name__, obj)
                     )
 
         return result
