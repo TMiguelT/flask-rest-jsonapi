@@ -158,22 +158,6 @@ def get_related_schema(schema, field):
     return schema._declared_fields[field].__dict__["_Relationship__schema"]
 
 
-def get_schema_from_type(resource_type):
-    """Retrieve a schema from the registry by his type
-
-    :param str type_: the type of the resource
-    :return Schema: the schema class
-    """
-    for cls_name, cls in class_registry._registry.items():
-        try:
-            if cls[0].opts.type_ == resource_type:
-                return cls[0]
-        except Exception:
-            pass
-
-    raise Exception("Couldn't find schema for type: {}".format(resource_type))
-
-
 def get_schema_field(schema, field):
     """Get the schema field of a model field
 
