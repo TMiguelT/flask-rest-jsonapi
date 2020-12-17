@@ -223,7 +223,10 @@ def test_accept_no_accept(person, person_2, client, registered_routes):
     Check that a request without an Accept header works
     """
     response = client.get(
-        "/persons", headers={"Content-Type": "application/vnd.api+json",}
+        "/persons",
+        headers={
+            "Content-Type": "application/vnd.api+json",
+        },
     )
 
     assert response.status_code == 200, response.json
@@ -254,7 +257,10 @@ def test_accept_charset(person, person_2, client, registered_routes):
     Check that a request with a valid Accept header but a charset parameter works
     """
     response = client.get(
-        "/persons", headers={"Accept": "application/vnd.api+json; charset=utf-8",}
+        "/persons",
+        headers={
+            "Accept": "application/vnd.api+json; charset=utf-8",
+        },
     )
 
     assert response.status_code == 200, response.json
