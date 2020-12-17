@@ -504,7 +504,11 @@ def test_get_detail(client, registered_routes, person):
 
 def test_get_detail_with_sparse_fieldsets(client, registered_routes, person):
     with client:
-        querystring = urlencode({"fields[person]": "name",})
+        querystring = urlencode(
+            {
+                "fields[person]": "name",
+            }
+        )
         response = client.get(
             "/persons/" + str(person.person_id) + "?" + querystring,
             content_type="application/vnd.api+json",
@@ -752,7 +756,9 @@ def test_resource_kwargs(app):
         TestResource,
         "resource_kwargs",
         "/resource_kwargs",
-        resource_kwargs={"constant": "hello!",},
+        resource_kwargs={
+            "constant": "hello!",
+        },
     )
     api.init_app()
     with app.test_client() as client:
@@ -1336,7 +1342,13 @@ def test_post_relationship_missing_type(client, registered_routes, computer, per
 
 
 def test_post_relationship_missing_id(client, registered_routes, computer, person):
-    payload = {"data": [{"type": "computer",}]}
+    payload = {
+        "data": [
+            {
+                "type": "computer",
+            }
+        ]
+    }
 
     with client:
         response = client.post(
@@ -1432,7 +1444,13 @@ def test_patch_relationship_missing_type(client, registered_routes, computer, pe
 
 
 def test_patch_relationship_missing_id(client, registered_routes, computer, person):
-    payload = {"data": [{"type": "computer",}]}
+    payload = {
+        "data": [
+            {
+                "type": "computer",
+            }
+        ]
+    }
 
     with client:
         response = client.patch(
@@ -1528,7 +1546,13 @@ def test_delete_relationship_missing_type(client, registered_routes, computer, p
 
 
 def test_delete_relationship_missing_id(client, registered_routes, computer, person):
-    payload = {"data": [{"type": "computer",}]}
+    payload = {
+        "data": [
+            {
+                "type": "computer",
+            }
+        ]
+    }
 
     with client:
         response = client.delete(
